@@ -1,44 +1,84 @@
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.jupiter.api.*;
+import com.applitools.eyes.BatchInfo;
+import com.applitools.eyes.EyesRunner;
+import com.applitools.eyes.RectangleSize;
+import com.applitools.eyes.TestResultsSummary;
+import com.applitools.eyes.selenium.BrowserType;
+import com.applitools.eyes.selenium.ClassicRunner;
+import com.applitools.eyes.selenium.Configuration;
+import com.applitools.eyes.selenium.Eyes;
+import com.applitools.eyes.selenium.fluent.Target;
+import com.applitools.eyes.visualgrid.model.DeviceName;
+import com.applitools.eyes.visualgrid.model.ScreenOrientation;
+import com.applitools.eyes.visualgrid.services.RunnerOptions;
+import com.applitools.eyes.visualgrid.services.VisualGridRunner;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.testng.Assert;
+import org.testng.ITestResult;
+import org.testng.annotations.*;
 
 public class TestCase {
     WebDriver driver;
+    BatchInfo myBatch;
+    Configuration suitConfig;
+    EyesRunner testRunner;
+    Eyes eyes;
 
-    @BeforeEach
-    public void beforeEach() {
-        driver = WebDriverManager.chromedriver().create();
+    @BeforeClass
+    public void beforeAll(){
+        driver = new ChromeDriver();
+        myBatch = new BatchInfo("My First Batch");
+        suitConfig = new Configuration();
+        suitConfig.setApiKey("MOz5NwvkTZxbY2NcHKXl8jOsenPHcKNIoq5chLKRbDI110");
+        suitConfig.setBatch(myBatch);
+
+        //desktop browsers
+        suitConfig.addBrowser(800, 600, BrowserType.CHROME);
+        suitConfig.addBrowser(1600, 1200, BrowserType.FIREFOX);
+        suitConfig.addBrowser(1024, 768, BrowserType.SAFARI);
+
+        //mobile devices
+        suitConfig.addDeviceEmulation(DeviceName.Galaxy_S22, ScreenOrientation.PORTRAIT);
+        suitConfig.addDeviceEmulation(DeviceName.iPhone_XS_Max, ScreenOrientation.PORTRAIT);
+
+//      testRunner = new ClassicRunner();
+        testRunner = new VisualGridRunner(new RunnerOptions().testConcurrency(5));
+    }
+
+    @BeforeMethod
+    public void beforeEach(ITestResult result) {
+        eyes = new Eyes();
+        eyes.setConfiguration(suitConfig);
+        eyes.open(driver,
+                "my first tests",
+                result.getMethod().getMethodName(),
+                new RectangleSize(1000,600)
+        );
+
     }
     @Test
     public void myTestCase() {
-        driver.get("https://applitools.com/helloworld/");
-        WebElement numbers = driver.findElement(By.cssSelector("span.primary"));
-        WebElement button = driver.findElement(By.cssSelector("div.section:nth-child(3) > button:nth-child(1)"));
-        WebElement titleH = driver.findElement(By.cssSelector("div.fancy:nth-child(1) > span:nth-child(1)"));
-        WebElement titleD = driver.findElement(By.cssSelector("div.fancy:nth-child(1) > span:nth-child(11)"));
-
-        Assertions.assertEquals(numbers.isDisplayed(), true);
-        Assertions.assertEquals(numbers.getText(), "123456");
-        Assertions.assertEquals(numbers.getCssValue("color"), "rgba(78, 90, 99, 1)");
-
-        Assertions.assertEquals(button.isDisplayed(), true);
-        Assertions.assertEquals(button.getText(), "Click me!");
-        Assertions.assertEquals(button.getCssValue("color"), "rgba(255, 255, 255, 1)");
-
-        Assertions.assertEquals(titleH.isDisplayed(), true);
-        Assertions.assertEquals(titleH.getText(), "H");
-        Assertions.assertEquals(titleH.getCssValue("color"), "rgba(255, 0, 0, 1)");
-
-        Assertions.assertEquals(titleD.isDisplayed(), true);
-        Assertions.assertEquals(titleD.getText(), "D");
-        Assertions.assertEquals(titleD.getCssValue("color"), "rgba(70, 0, 255, 1)");`
+        driver.get("https://applitools.com/helloworld/?diff1");
+        eyes.check(Target.window());
     }
 
-    @AfterEach
+    @Test
+    public void exampleTestCase() {
+        driver.get("https://example.com");
+        eyes.check(Target.window());
+    }
+
+    @AfterMethod
     public void afterEach() {
+        eyes.closeAsync();
+    }
+
+    @AfterClass
+    public void afterAll(){
         driver.close();
+        TestResultsSummary result = testRunner.getAllTestResults();
+        System.out.println(result);
     }
 }
